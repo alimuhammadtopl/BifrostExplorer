@@ -1,4 +1,6 @@
 sqlite.db
 src/sqlite.db
 venv/
-
+*.pyc
+__pycache__/
+src/__pycache__/
