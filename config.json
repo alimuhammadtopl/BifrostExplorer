@@ -1,0 +1,7 @@
+{
+  "databasePath": "sqlite.db",
+  "chainUrl": "http://localhost",
+  "port": "9085/",
+  "queryChainInterval": 15,
+  "chainApiKey": ""
+}
