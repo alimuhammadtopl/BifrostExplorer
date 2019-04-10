@@ -19,6 +19,7 @@ def main():
         database.queryAndUpdate()
         time.sleep(app.config["queryChainInterval"])
 
+###Make such that database is initialized first and then update and app serving are done simultaneously
 p = Process(target=main)
 p.start()
 serve(app, host='0.0.0.0', port=5000)
