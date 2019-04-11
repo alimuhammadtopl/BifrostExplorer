@@ -2,103 +2,110 @@ from LokiPy import Requests
 import json
 import numpy as np
 import sqlite3
+import src.utils.parseJson as parseJson
 
-def printJson(jsonData):
-    print(json.dumps(jsonData, indent = 4))
+#############################
+#TODO: put helper functions in separate file
+#############################
 
-###parses txs array from a block and converts it to comma separated txHash string###
-def createTxsString(txs):
-    txString = ""
-    for tx in txs:
-        try:
-            txString = txString + tx["txHash"] + ","
-        except Exception as e:
-            print("Could not get transaction hash from block: ", e)
-            raise
-    if txString is not "":
-        txString = txString[0:len(txString)-1]
-    return txString
+# def printJson(jsonData):
+#     print(json.dumps(jsonData, indent = 4))
+#
+# ###parses txs array from a block and converts it to comma separated txHash string###
+# def createTxsString(blockResult):
+#     if "txs" in blockResult:
+#         txsSet = set()
+#         for tx in blockResult["txs"]:
+#             try:
+#                 txsSet.add(tx["txHash"])
+#             except Exception as e:
+#                 print("Could not get transaction hash from transaction instance in block: ", e)
+#                 raise
+#
+#         return ','.join(map(str, txsSet))
+#     else:
+#         return None
+#
+# ###parses a transaction and converts it to comma separated addresses string of to addresses###
+# ###NOTE: Checks unique address
+# ###Returns a string or None since toAddresses column accepts NULL values
+# def createToAddressesString(transactionResult):
+#     if "to" in transactionResult:
+#         addressesSet = set()
+#         for toInstance in transactionResult["to"]:
+#             try:
+#                 addressesSet.add(toInstance["proposition"])
+#             except Exception as e:
+#                 print("Could not get proposition from to instance in transaction: ", e)
+#                 raise
+#
+#         return ','.join(map(str, addressesSet))
+#     else:
+#         return None
+#
+# ###parses a transaction and converts it to comma separated addresses string of to addresses###
+# ###NOTE: Checks unique address
+# ###Returns a string or None since fromAddresses column accepts NULL values
+# def createFromAddressesString(transactionResult):
+#     if "from" in transactionResult:
+#         addressesSet = set()
+#         for fromInstance in transactionResult["from"]:
+#             try:
+#                 addressesSet.add(fromInstance["proposition"])
+#             except Exception as e:
+#                 print("Could not get proposition from from instance in transaction: ", e)
+#                 raise
+#
+#         return ','.join(map(str, addressesSet))
+#     else:
+#         return None
+#
+#
+# ###parses a transaction and converts it to comma separated newBoxes string of newly created boxes ids###
+# ###Returns a string or None since newBoxes column accepts NULL values
+# def createNewBoxesString(transactionResult):
+#     if "newBoxes" in transactionResult:
+#         newBoxesSet = set()
+#         for newBoxesInstance in transactionResult["newBoxes"]:
+#             newBoxesSet.add(newBoxesInstance)
+#
+#         return ','.join(map(str, newBoxesSet))
+#     else:
+#         return None
+#
+# ###parses a transaction and converts it to comma separated boxesToRemove string of destroyed boxes ids###
+# ###Returns a string or None since boxesToRemove column accepts NULL values
+# def createBoxesToRemoveString(transactionResult):
+#     if "boxesToRemove" in transactionResult:
+#         boxesToRemoveSet = set()
+#         for boxesToRemoveInstance in transactionResult["boxesToRemove"]:
+#             boxesToRemoveSet.add(boxesToRemoveInstance)
+#
+#         return ','.join(map(str, boxesToRemoveSet))
+#     else:
+#         return None
+#
+# ###parses a transaction and converts it to comma separated signatures string of signatures created in the transaction###
+# ###Returns a string or None since signatures column accepts NULL values
+# def createSignaturesString(transactionResult):
+#     if "signatures" in transactionResult:
+#         signaturesString = ""
+#         for signatureInstance in transactionResult["signatures"]:
+#             signaturesString = signaturesString + signatureInstance + ","
+#
+#         return signaturesString[0:len(signaturesString)-1]
+#     else:
+#         return None
 
-###parses a transaction and converts it to comma separated addresses string of to addresses###
-###NOTE: does not check unique address
-###Returns a string or None since toAddresses column accepts NULL values
-def createToAddressesString(transactionResult):
-    propString = ""
-    if "to" in transactionResult:
-        propString = ""
-        for toInstance in transactionResult["to"]:
-            try:
-                propString = propString + toInstance["proposition"] + ","
-            except Exception as e:
-                print("Could not get proposition from transaction: ", e)
-                raise
 
-        return propString[0:len(propString)-1]
-
-    else:
-        return None
-
-###parses a transaction and converts it to comma separated addresses string of to addresses###
-###NOTE: does not check unique address
-###Returns a string or None since fromAddresses column accepts NULL values
-def createFromAddressesString(transactionResult):
-    propString = ""
-    if "from" in transactionResult:
-        propString = ""
-        for fromInstance in transactionResult["from"]:
-            try:
-                propString = propString + fromInstance["proposition"] + ","
-            except Exception as e:
-                print("Could not get proposition from transaction: ", e)
-                raise
-
-        return propString[0:len(propString)-1]
-
-    else:
-        return None
-
-
-###parses a transaction and converts it to comma separated newBoxes string of newly created boxes ids###
-###Returns a string or None since newBoxes column accepts NULL values
-def createNewBoxesString(transactionResult):
-    boxesString = ""
-    if "newBoxes" in transactionResult:
-        boxesString = ""
-        for newBoxesInstance in transactionResult["newBoxes"]:
-            try:
-                boxesString = boxesString + newBoxesInstance + ","
-            except Exception as e:
-                print("Could not get proposition from transaction: ", e)
-                raise
-
-        return boxesString[0:len(boxesString)-1]
-
-    else:
-        return None
-
-###parses a transaction and converts it to comma separated boxesToRemove string of destroyed boxes ids###
-###Returns a string or None since boxesToRemove column accepts NULL values
-def createBoxesToRemoveString(transactionResult):
-    boxesString = ""
-    if "boxesToRemove" in transactionResult:
-        boxesString = ""
-        for boxesToRemoveInstance in transactionResult["boxesToRemove"]:
-            try:
-                boxesString = boxesString + boxesToRemoveInstance + ","
-            except Exception as e:
-                print("Could not get proposition from transaction: ", e)
-                raise
-
-        return boxesString[0:len(boxesString)-1]
-
-    else:
-        return None
-
+#################################################################
+########################### DATABASE ############################
+#################################################################
 
 class Database:
-    def __init__(self, database_filename, chain_url, api_key=None):
+    def __init__(self, database_filename, chain_full_url, api_key=None):
         self.fileName = database_filename
-        self.chainUrl = chain_url
+        self.chainFullUrl = chain_full_url
         self.chainApiKey = api_key
         self.LokiObj = Requests.LokiPy()
         self.conn = None
@@ -106,7 +113,8 @@ class Database:
 
 
     def parseAddressesFromTransactionAndUpdateDB(self, transactionResult):
-        addressesSet = {}
+        print("----------------Entered parseAddressesFromTransactionAndUpdateDB")
+        addressesSet = set()
         if "to" in transactionResult:
             for toInstance in transactionResult["to"]:
                 try:
@@ -128,35 +136,57 @@ class Database:
             newTransactionString = ""
             if len(data) == 0:
                 newTransactionString = transactionResult["txHash"]
-                c = self.cur.execute("INSERT INTO addresses VALUES (?,?)", (address, newTransactionString))
+                self.cur.execute("INSERT INTO addresses VALUES (?,?)", (address, newTransactionString))
             else:
                 ###Will only ever be a single value list if not empty
                 for transactionString in data:
                     newTransactionString = transactionString[0] + "," + transactionResult["txHash"]
-                    c = self.cur.execute("UPDATE addresses SET transactions=? WHERE publicKey=?",
+                    self.cur.execute("UPDATE addresses SET transactions=? WHERE publicKey=?",
                     (newTransactionString, address))
 
 
 
+    def parseAssetsFromTransactionAndUpdateDB(self, transactionResult):
+        print("----------------Entered parseAssetsFromTransactionAndUpdateDB")
+        try:
+            c = self.cur.execute("SELECT transactions FROM assets WHERE assetCode=?", (transactionResult["assetCode"],))
+            data = c.fetchall()
+            if len(data) == 0:
+                self.cur.execute("INSERT INTO assets VALUES (?,?)", (transactionResult["assetCode"],transactionResult["txHash"]))
+            else:
+                for transactionString in data:
+                    newTransactionString = transactionString[0] + "," + transactionResult["txHash"]
+                    self.cur.execute("UPDATE assets SET transactions=? WHERE assetCode=?",
+                    (newTransactionString, transactionResult["assetCode"]))
+        except Exception as e:
+            print("Could not insert transaction into assets table: ", e)
+            raise
+
+
 
     def parseTransactionsFromBlockAndUpdateDB(self, txsArray):
+        print(">>>>>>>>>>>>>>>>>>>>>>Entered parseTransactionsFromBlockAndUpdateDB")
         for tx in txsArray:
             try:
                 transactionResult = self.LokiObj.getTransactionById(tx["txHash"])["result"]
                 try:
-                    self.cur.execute("INSERT INTO transactions VALUES (?,?,?,?,?,?,?,?,?)", (transactionResult["txHash"], transactionResult["timestamp"], transactionResult["blockNumber"], transactionResult["blockHash"], createToAddressesString(transactionResult),
-                    createFromAddressesString(transactionResult),
-                    createNewBoxesString(transactionResult),
-                    createBoxesToRemoveString(transactionResult),
+                    self.cur.execute("INSERT INTO transactions VALUES (?,?,?,?,?,?,?,?,?,?,?)", (transactionResult["txHash"], transactionResult["timestamp"], transactionResult["blockNumber"], transactionResult["blockHash"], parseJson.createToAddressesString(transactionResult),
+                    parseJson.createFromAddressesString(transactionResult),
+                    parseJson.createNewBoxesString(transactionResult),
+                    parseJson.createBoxesToRemoveString(transactionResult),
+                    transactionResult["fee"],
+                    parseJson.createSignaturesString(transactionResult),
                     json.dumps(transactionResult)))
                 except Exception as e:
                     print("Could not insert block into blocks table: ", e)
                     raise
-                # insertTransactionInAddressesTable(transactionResult)
+                self.parseAddressesFromTransactionAndUpdateDB(transactionResult)
+                ###updating assets table if transaction contains the assetCode field in its json
+                if "assetCode" in transactionResult:
+                    self.parseAssetsFromTransactionAndUpdateDB(transactionResult)
             except Exception as e:
                 print("Getting transaction by id and parsing result failed: ", e)
                 raise
-                # self.parseAddressesFromTransactionAndUpdateDB(transactionResult)
 
         c = self.cur.execute("SELECT * FROM transactions WHERE txHash=?", (transactionResult["txHash"],))
         data = c.fetchall()
@@ -164,8 +194,8 @@ class Database:
 
     def init(self):
         ### Settings the url and apiKey of the database's LokiPy instance
-        print("Initializing db")
-        self.LokiObj.setUrl(self.chainUrl)
+        print("=====================Initializing db=========================")
+        self.LokiObj.setUrl(self.chainFullUrl)
         if self.chainApiKey is not None:
             self.LokiObj.setApiKey(self.chainApiKey)
         ####query chain for history list#####
@@ -184,11 +214,6 @@ class Database:
         ###########################
 
 
-        ###########################
-        ###TODO add fees and signatures to transactions table (and look for other fields to add)###
-        ###########################
-
-
         create_transactions_table = """ CREATE TABLE IF NOT EXISTS transactions (
                                             txHash text PRIMARY KEY,
                                             timestamp text NOT NULL,
@@ -198,6 +223,8 @@ class Database:
                                             fromAddresses text,
                                             newBoxes text,
                                             boxesToRemove text,
+                                            fee integer,
+                                            signatures text,
                                             txJson text NOT NULL
                                         ); """
         create_blocks_table = """ CREATE TABLE IF NOT EXISTS blocks (
@@ -213,23 +240,30 @@ class Database:
                                         publicKey text PRIMARY KEY,
                                         transactions text
                                     ); """
+        create_assets_table = """ CREATE TABLE IF NOT EXISTS assets (
+                                        assetCode text PRIMARY KEY,
+                                        transactions text
+                                    ); """
         self.cur.execute(create_blocks_table)
         self.cur.execute(create_transactions_table)
         self.cur.execute(create_addresses_table)
+        self.cur.execute(create_assets_table)
         ###blocks Table###
-        self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?)", (historyInstance["blockNumber"], historyInstance["id"], historyInstance["timestamp"], historyInstance["signature"], createTxsString(historyInstance["txs"]), historyInstance["parentId"], json.dumps(historyInstance)))
+        self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?)", (historyInstance["blockNumber"], historyInstance["id"], historyInstance["timestamp"], historyInstance["signature"], parseJson.createTxsString(historyInstance["txs"]), historyInstance["parentId"], json.dumps(historyInstance)))
         ###transactions Table###
         self.parseTransactionsFromBlockAndUpdateDB(historyInstance["txs"])
         ###addresses Table###
-        self.parseAddressesFromTransactionAndUpdateDB(historyInstance["txs"])
+        # self.parseAddressesFromTransactionAndUpdateDB(historyInstance["txs"])
+        ###assets Table###
+        # self.parseAssetsFromTransactionAndUpdateDB(transactionResult)
 
         while historyInstance["parentId"] != None:
             try:
                 # print(historyInstance["blockNumber"])
                 historyInstance = self.LokiObj.getBlockById(historyInstance["parentId"])["result"]
-                self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?)", (historyInstance["blockNumber"], historyInstance["id"], historyInstance["timestamp"], historyInstance["signature"], createTxsString(historyInstance["txs"]), historyInstance["parentId"], json.dumps(historyInstance)))
+                self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?)", (historyInstance["blockNumber"], historyInstance["id"], historyInstance["timestamp"], historyInstance["signature"], parseJson.createTxsString(historyInstance), historyInstance["parentId"], json.dumps(historyInstance)))
                 self.parseTransactionsFromBlockAndUpdateDB(historyInstance["txs"])
-                self.parseAddressesFromTransactionAndUpdateDB(historyInstance["txs"])
+                # self.parseAddressesFromTransactionAndUpdateDB(historyInstance["txs"])
             except:
                 historyInstance["parentId"] = None
 
@@ -239,7 +273,7 @@ class Database:
 
 
     def queryAndUpdate(self):
-        print("Entered queryAndUpdate")
+        print("======================Entered queryAndUpdate=======================")
         history = np.array(self.LokiObj.printChain()["result"]["history"].split(','))
         self.conn = sqlite3.connect(self.fileName)
         self.cur = self.conn.cursor()
@@ -253,7 +287,7 @@ class Database:
         data = c.fetchall()
         ###Accessing parent of topmost block until a block is queried that already exists in db
         while len(data) < 1:
-            self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?)", (historyInstance["blockNumber"], historyInstance["id"], historyInstance["timestamp"], historyInstance["signature"], createTxsString(historyInstance["txs"]), historyInstance["parentId"], json.dumps(historyInstance)))
+            self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?)", (historyInstance["blockNumber"], historyInstance["id"], historyInstance["timestamp"], historyInstance["signature"], parseJson.createTxsString(historyInstance), historyInstance["parentId"], json.dumps(historyInstance)))
             self.parseTransactionsFromBlockAndUpdateDB(historyInstance["txs"])
             self.parseAddressesFromTransactionAndUpdateDB(historyInstance["txs"])
             currentIndex = currentIndex - 1
