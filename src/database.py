@@ -55,19 +55,20 @@ class Database:
 
     def parseAssetsFromTransactionAndUpdateDB(self, transactionResult):
         print("----------------Entered parseAssetsFromTransactionAndUpdateDB")
-        try:
-            c = self.cur.execute("SELECT transactions FROM assets WHERE assetCode=?", (transactionResult["assetCode"],))
-            data = c.fetchall()
-            if len(data) == 0:
-                self.cur.execute("INSERT INTO assets VALUES (?,?)", (transactionResult["assetCode"],transactionResult["txHash"]))
-            else:
-                for transactionString in data:
-                    newTransactionString = transactionString[0] + "," + transactionResult["txHash"]
-                    self.cur.execute("UPDATE assets SET transactions=? WHERE assetCode=?",
-                    (newTransactionString, transactionResult["assetCode"]))
-        except Exception as e:
-            print("Could not insert transaction into assets table: ", e)
-            raise
+        if "assetCode" in transactionResult:
+            try:
+                c = self.cur.execute("SELECT transactions FROM assets WHERE assetCode=?", (transactionResult["assetCode"],))
+                data = c.fetchall()
+                if len(data) == 0:
+                    self.cur.execute("INSERT INTO assets VALUES (?,?)", (transactionResult["assetCode"],transactionResult["txHash"]))
+                else:
+                    for transactionString in data:
+                        newTransactionString = transactionString[0] + "," + transactionResult["txHash"]
+                        self.cur.execute("UPDATE assets SET transactions=? WHERE assetCode=?",
+                        (newTransactionString, transactionResult["assetCode"]))
+            except Exception as e:
+                print("Could not insert transaction into assets table: ", e)
+                raise
 
 
 
@@ -96,8 +97,8 @@ class Database:
                 print("Getting transaction by id and parsing result failed: ", e)
                 raise
 
-        c = self.cur.execute("SELECT * FROM transactions WHERE txHash=?", (transactionResult["txHash"],))
-        data = c.fetchall()
+        # c = self.cur.execute("SELECT * FROM transactions WHERE txHash=?", (transactionResult["txHash"],))
+        # data = c.fetchall()
 
 
     def init(self):
@@ -113,14 +114,9 @@ class Database:
         # Querying parentId of 1st block returns 500 error None.get
         # printJson(LokiObj.getBlockById("4vJ9JU1bJJE96FWSJKvHsmmFADCg4gpZQff4P3bkLKi"))
 
-        ###database####
+        ###database connection intialization####
         self.conn = sqlite3.connect(self.fileName)
         self.cur = self.conn.cursor()
-
-        ###########################
-        ###TODO add assets table###
-        ###########################
-
 
         create_transactions_table = """ CREATE TABLE IF NOT EXISTS transactions (
                                             txHash text PRIMARY KEY,
@@ -179,6 +175,7 @@ class Database:
     def queryAndUpdate(self):
         print("======================Entered queryAndUpdate=======================")
         history = np.array(self.LokiObj.printChain()["result"]["history"].split(','))
+        ###database connection intialization####
         self.conn = sqlite3.connect(self.fileName)
         self.cur = self.conn.cursor()
         currentIndex = -1
