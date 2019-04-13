@@ -1,7 +1,9 @@
 {
-  "databasePath": "sqlite.db",
-  "chainUrl": "http://localhost",
-  "port": "9085/",
-  "queryChainInterval": 15,
-  "chainApiKey": ""
+  "database_path": "sqlite.db",
+  "chain_url": "http://localhost",
+  "chain_port": "9085/",
+  "query_chain_interval": 15,
+  "chain_api_key": "",
+  "app_api_port": "5000",
+  "app_api_key": ""
 }
