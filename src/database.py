@@ -210,3 +210,17 @@ class Database:
             data = c.fetchall()
         self.conn.commit()
         self.conn.close()
+
+
+    ###Query database for api endpoints
+    def block_by_id(self, id):
+            self.conn = sqlite3.connect(self.filename)
+            self.cur = self.conn.cursor()
+            c = self.cur.execute("SELECT blockJson FROM blocks WHERE blockHash=?", (id,))
+            data = c.fetchone()
+            if data is not None:
+                response = json.loads(data[0])
+            else:
+                response = None
+            self.conn.close()
+            return response

@@ -4,6 +4,7 @@ import sqlite3
 from flask import Flask, request
 from flask_cors import CORS
 from src.database import Database
+import src.utils.jsonrpc as rpc
 
 
 app = Flask(__name__)
@@ -26,57 +27,64 @@ def setup_test():
 ###Creating a new database instance for each query to ensure connection safety between api threads
 @app.route("/api", methods=["POST"])
 def rpc_handler():
-    req = request.get_json()
-    database = Database(app.config["database_path"])
-    database.conn = sqlite3.connect(database.filename)
-    database.cur = database.conn.cursor()
-    # c = database.cur.execute("SELECT * from addresses")
-    # return json.dumps(c.fetchall())
+    try:
+        req = request.get_json()
+        database = Database(app.config["database_path"])
+        database.conn = sqlite3.connect(database.filename)
+        database.cur = database.conn.cursor()
 
-    ###Try to minimize number of queries frontend would need to make so serve more information if possible
-    ###For example: return list of transaction jsons for get_transactions_by_block_id instead of just list of transaction ids so clients dont have to re-query
-    if req["method"] == "block_by_id":
+        ###Try to minimize number of queries frontend would need so make sure to serve more information if possible
+        ###For example: return list of transaction jsons for get_transactions_by_block_id instead of just list of transaction ids so clients dont have to re-query
+        ###Dont expose too many of the LokiPy endpoints for use via the app's api because that increases requests to the node which this app is attempting to subvert
+        ###Implement asserts on req id and maybe params before checking method
 
-        return
-    elif req["method"] == "block_by_number":
+        validation_proposition = rpc.validate_request(req)
+        if validation_proposition != 0:
+            rpc.make_error_resp(validation_proposition, rpc.rpc_errors[validation_proposition], req["id"])
 
-        return
-    elif req["method"] == "transactions_by_block_number":
+        if req["method"] == "block_by_id":
+            return rpc.rpc_success_response(database.block_by_id(req["params"]["blockHash"]), req["id"])
+        elif req["method"] == "block_by_number":
 
-        return
-    elif req["method"] == "transactions_by_block_id":
+            return
+        elif req["method"] == "transactions_by_block_number":
 
-        return
-    elif req["method"] == "all_confirmed_transactions":
+            return
+        elif req["method"] == "transactions_by_block_id":
 
-        return
-    elif req["method"] == "transaction_by_id":
+            return
+        elif req["method"] == "all_confirmed_transactions":
 
-        return
-    elif req["method"] == "transactions_by_asset_code":
+            return
+        elif req["method"] == "transaction_by_id":
 
-        return
-    elif req["method"] == "transactions_by_issuer":
+            return
+        elif req["method"] == "transactions_by_asset_code":
 
-        return
-    elif req["method"] == "transactions_by_issuer_by_asset_code":
+            return
+        elif req["method"] == "transactions_by_issuer":
 
-        return
-    elif req["method"] == "transactions_by_public_key":
+            return
+        elif req["method"] == "transactions_by_issuer_by_asset_code":
 
-        return
-    elif req["method"] == "transactions_in_mempool":
+            return
+        elif req["method"] == "transactions_by_public_key":
 
-        return
-    elif req["method"] == "average_block_delay":
+            return
+        elif req["method"] == "transactions_in_mempool":
 
-        return
-    elif req["method"] == "current_block_height":
+            return
+        elif req["method"] == "average_block_delay":
 
-        return
-    elif req["method"] == "block_difficulty":
+            return
+        elif req["method"] == "current_block_height":
 
-        return
-    elif req["method"] == "block_size_by_id":
+            return
+        elif req["method"] == "block_difficulty":
 
-        return
+            return
+        elif req["method"] == "block_size_by_id":
+
+            return
+    except:
+        return rpc.make_error_resp(-32603, rpc.rpc_errors[-32603], None)
