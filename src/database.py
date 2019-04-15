@@ -72,6 +72,21 @@ class Database:
                 print("Could not insert transaction into assets table: ", e)
                 raise
 
+    def parse_transaction_and_update_issuers_table(self, transaction_result):
+        if "issuer" in transaction_result:
+            try:
+                c = self.cur.execute("SELECT transactions FROM issuers WHERE issuer=?", (transaction_result["issuer"],))
+                data = c.fetchall()
+                if len(data) == 0:
+                    self.cur.execute("INSERT INTO issuers VALUES (?,?)", (transaction_result["issuer"],transaction_result["txHash"]))
+                else:
+                    for transaction_string in data:
+                        new_transaction_string = transaction_string[0] + "," + transaction_result["txHash"]
+                        self.cur.execute("UPDATE issuers SET transactions=? WHERE issuer=?",
+                        (new_transaction_string, transaction_result["issuer"]))
+            except Exception as e:
+                print("Could not insert transaction into issuers table: ", e)
+                raise
 
 
     def parse_transactions_array_and_update_tables(self, txs_array):
@@ -80,7 +95,7 @@ class Database:
             try:
                 transaction_result = self.loki_obj.getTransactionById(tx["txHash"])["result"]
                 try:
-                    self.cur.execute("INSERT INTO transactions VALUES (?,?,?,?,?,?,?,?,?,?,?)", (transaction_result["txHash"], transaction_result["timestamp"], transaction_result["blockNumber"], transaction_result["blockHash"], parseJson.create_to_addresses_string(transaction_result),
+                    self.cur.execute("INSERT INTO transactions VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (transaction_result["txHash"], transaction_result["txType"], transaction_result["timestamp"], transaction_result["blockNumber"], transaction_result["blockHash"], parseJson.create_to_addresses_string(transaction_result),
                     parseJson.create_from_addresses_string(transaction_result),
                     parseJson.create_new_boxes_string(transaction_result),
                     parseJson.create_boxes_to_remove_string(transaction_result),
@@ -95,6 +110,9 @@ class Database:
                 ###updating assets table if transaction contains the assetCode field in its json
                 if "assetCode" in transaction_result:
                     self.parse_transaction_and_update_assets_table(transaction_result)
+                ###updating issuers table if transaction contains the issuer field in its json
+                if "issuer" in transaction_result:
+                    self.parse_transaction_and_update_issuers_table(transaction_result)
             except Exception as e:
                 print("Getting transaction by id and parsing result failed: ", e)
                 raise
@@ -127,6 +145,7 @@ class Database:
 
         create_transactions_table = """ CREATE TABLE IF NOT EXISTS transactions (
                                             txHash text PRIMARY KEY,
+                                            txType text,
                                             timestamp text NOT NULL,
                                             blockNumber integer NOT NULL,
                                             blockHash text NOT NULL,
@@ -143,7 +162,7 @@ class Database:
                                         blockHash text NOT NULL,
                                         timestamp text NOT NULL,
                                         signature text NOT NULL,
-                                        txs text,
+                                        transactions text,
                                         parentId text NOT NULL,
                                         blockJson text NOT NULL
                                     ); """
@@ -155,10 +174,15 @@ class Database:
                                         assetCode text PRIMARY KEY,
                                         transactions text
                                     ); """
+        create_issuers_table = """ CREATE TABLE IF NOT EXISTS issuers (
+                                        issuer text PRIMARY KEY,
+                                        transactions text
+                                    ); """
         self.cur.execute(create_blocks_table)
         self.cur.execute(create_transactions_table)
         self.cur.execute(create_addresses_table)
         self.cur.execute(create_assets_table)
+        self.cur.execute(create_issuers_table)
         ###blocks Table###
         ###TODO: check that block does not already exist in table (insert error occurs when stopping and restarting app quickly and new block hasnt been forged yet)
         try:
@@ -211,16 +235,200 @@ class Database:
         self.conn.commit()
         self.conn.close()
 
+    ###########################################################
+    ##############Query database for api endpoints#############
+    ###########################################################
 
-    ###Query database for api endpoints
-    def block_by_id(self, id):
+    def block_by_id(self, block_id):
             self.conn = sqlite3.connect(self.filename)
             self.cur = self.conn.cursor()
-            c = self.cur.execute("SELECT blockJson FROM blocks WHERE blockHash=?", (id,))
+            c = self.cur.execute("SELECT blockJson FROM blocks WHERE blockHash=?", (block_id,))
             data = c.fetchone()
             if data is not None:
                 response = json.loads(data[0])
             else:
                 response = None
             self.conn.close()
+            return response
+
+    def block_by_number(self, block_number):
+            self.conn = sqlite3.connect(self.filename)
+            self.cur = self.conn.cursor()
+            c = self.cur.execute("SELECT blockJson FROM blocks WHERE blockNumber=?", (block_number,))
+            data = c.fetchone()
+            if data is not None:
+                response = json.loads(data[0])
+            else:
+                response = None
+            self.conn.close()
+            return response
+
+    def transaction_by_id(self, tx_id):
+            self.conn = sqlite3.connect(self.filename)
+            self.cur = self.conn.cursor()
+            c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (tx_id,))
+            data = c.fetchone()
+            if data is not None:
+                response = json.loads(data[0])
+            else:
+                response = None
+            self.conn.close()
+            return response
+
+    ### Returns transaction jsons for all transactions the entered public key is involved in as a to or from address (note: issuers are not included)
+    ###Consider removing "transactions" field from result json to standardize the results for instance with transaction_from_mempool
+    def transactions_by_public_key(self, public_key):
+            self.conn = sqlite3.connect(self.filename)
+            self.cur = self.conn.cursor()
+            c = self.cur.execute("SELECT transactions FROM addresses WHERE publicKey=?", (public_key,))
+            data = c.fetchone()
+            tx_jsons = np.array([])
+            if data is not None:
+                transactions = np.array(data[0].split(","))
+                for transaction in transactions:
+                    c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (transaction,))
+                    data = c.fetchone()
+                    if data is not None:
+                        tx_jsons = np.append(tx_jsons, json.loads(data[0]))
+            # response = {
+            #     "transactions": tx_jsons.tolist()
+            # }
+            self.conn.close()
+            return tx_jsons.tolist()
+
+    def transactions_by_block_number(self, block_number):
+            self.conn = sqlite3.connect(self.filename)
+            self.cur = self.conn.cursor()
+            c = self.cur.execute("SELECT transactions FROM blocks WHERE blockNumber=?", (block_number,))
+            data = c.fetchone()
+            tx_jsons = np.array([])
+            if data is not None:
+                transactions = np.array(data[0].split(","))
+                for transaction in transactions:
+                    c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (transaction,))
+                    data = c.fetchone()
+                    if data is not None:
+                        tx_jsons = np.append(tx_jsons, json.loads(data[0]))
+
+            # response = {
+            #     "transactions": tx_jsons.tolist()
+            # }
+            self.conn.close()
+            return tx_jsons.tolist()
+
+    def transactions_by_block_id(self, block_id):
+            self.conn = sqlite3.connect(self.filename)
+            self.cur = self.conn.cursor()
+            c = self.cur.execute("SELECT transactions FROM blocks WHERE blockHash=?", (block_id,))
+            data = c.fetchone()
+            tx_jsons = np.array([])
+            if data is not None:
+                transactions = np.array(data[0].split(","))
+                for transaction in transactions:
+                    c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (transaction,))
+                    data = c.fetchone()
+                    if data is not None:
+                        tx_jsons = np.append(tx_jsons, json.loads(data[0]))
+            # response = {
+            #     "transactions": tx_jsons.tolist()
+            # }
+            self.conn.close()
+            return tx_jsons.tolist()
+
+    def transactions_by_asset_code(self, asset_code):
+            self.conn = sqlite3.connect(self.filename)
+            self.cur = self.conn.cursor()
+            c = self.cur.execute("SELECT transactions FROM assets WHERE assetCode=?", (asset_code,))
+            data = c.fetchone()
+            tx_jsons = np.array([])
+            if data is not None:
+                transactions = np.array(data[0].split(","))
+                for transaction in transactions:
+                    c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (transaction,))
+                    data = c.fetchone()
+                    if data is not None:
+                        tx_jsons= np.append(tx_jsons, json.loads(data[0]))
+            # response = {
+            #     "transactions": tx_jsons.tolist()
+            # }
+            self.conn.close()
+            return tx_jsons.tolist()
+
+    def transactions_by_issuer(self, issuer):
+            self.conn = sqlite3.connect(self.filename)
+            self.cur = self.conn.cursor()
+            c = self.cur.execute("SELECT transactions FROM issuers WHERE issuer=?", (issuer,))
+            data = c.fetchone()
+            tx_jsons = np.array([])
+            if data is not None:
+                transactions = np.array(data[0].split(","))
+                for transaction in transactions:
+                    c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (transaction,))
+                    data = c.fetchone()
+                    if data is not None:
+                        tx_jsons = np.append(tx_jsons, json.loads(data[0]))
+            # response = {
+            #     "transactions": tx_jsons.tolist()
+            # }
+            self.conn.close()
+            return tx_jsons.tolist()
+
+    def transactions_by_issuer_by_asset_code(self, issuer, asset_code):
+            self.conn = sqlite3.connect(self.filename)
+            self.cur = self.conn.cursor()
+            c = self.cur.execute("SELECT transactions FROM issuers WHERE issuer=?", (issuer,))
+            data = c.fetchone()
+            tx_jsons = np.array([])
+            if data is not None:
+                issuer_transactions = np.array(data[0].split(","))
+                c = self.cur.execute("SELECT transactions FROM assets WHERE assetCode=?", (asset_code,))
+                data = c.fetchone()
+                if data is not None:
+                    asset_code_transactions = np.array(data[0].split(","))
+                    transactions = np.intersect1d(issuer_transactions, asset_code_transactions)
+                    # transactions = list(set(issuer_transactions).intersection(asset_code_transactions))
+                    for transaction in transactions:
+                        c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (transaction,))
+                        data = c.fetchone()
+                        if data is not None:
+                            tx_jsons = np.append(tx_jsons, json.loads(data[0]))
+            # response = {
+            #     "transactions": tx_jsons.tolist()
+            # }
+            self.conn.close()
+            return tx_jsons.tolist()
+
+    def transactions_in_mempool(self):
+        try:
+            self.loki_obj = Requests.LokiPy()
+            self.loki_obj.setUrl(self.chain_full_url)
+            if self.chain_api_key is not None:
+                self.loki_obj.setApiKey(self.chain_api_key)
+            response = self.loki_obj.getMempool()
+            result = json.loads(json.dumps(response))["result"]
+            return result
+        except Exception as e:
+            print("Could not get mempool from chain: ", e)
+            pass
+
+    def number_of_confirmed_transactions(self):
+            self.conn = sqlite3.connect(self.filename)
+            self.cur = self.conn.cursor()
+            c = self.cur.execute("SELECT Count(*) FROM transactions")
+            data = c.fetchone()
+            if data is not None:
+                response = {
+                    "number": data[0]
+                }
+            return response
+
+    def current_block_height(self):
+            self.conn = sqlite3.connect(self.filename)
+            self.cur = self.conn.cursor()
+            c = self.cur.execute("SELECT MAX(blockNumber) FROM blocks")
+            data = c.fetchone()
+            if data is not None:
+                response = {
+                    "height": data[0]
+                }
             return response

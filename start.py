@@ -18,7 +18,7 @@ with open('config.json') as f:
     app.config.update(config)
 
 ###Initialize the database according to the configurations
-database = Database(app.config["database_path"], app.config["chain_url"] + ":" + app.config["chain_port"])
+database = Database(app.config["database_path"], app.config["chain_url"] + ":" + app.config["chain_port"], app.config["chain_api_key"])
 database.init()
 ###Update database at queryInterval and serve flask app
 p = Process(target=update, args=(database,))

@@ -15,9 +15,8 @@ with open('config.json') as f:
     config = json.load(f)
     app.config.update(config)
 
-def print_json(json_data):
-    print(json.dumps(json_data, indent = 4))
-
+# def print_json(json_data):
+#     print(json.dumps(json_data, indent = 4))
 
 
 @app.route("/", methods=["POST"])
@@ -44,47 +43,58 @@ def rpc_handler():
 
         if req["method"] == "block_by_id":
             return rpc.rpc_success_response(database.block_by_id(req["params"]["blockHash"]), req["id"])
+
         elif req["method"] == "block_by_number":
+                return rpc.rpc_success_response(database.block_by_number(req["params"]["blockNumber"]), req["id"])
 
-            return
         elif req["method"] == "transactions_by_block_number":
+            return rpc.rpc_success_response(database.transactions_by_block_number(req["params"]["blockNumber"]), req["id"])
 
-            return
         elif req["method"] == "transactions_by_block_id":
+            return rpc.rpc_success_response(database.transactions_by_block_id(req["params"]["blockHash"]), req["id"])
 
-            return
-        elif req["method"] == "all_confirmed_transactions":
+        elif req["method"] == "number_of_confirmed_transactions":
+            return rpc.rpc_success_response(database.number_of_confirmed_transactions(), req["id"])
 
-            return
         elif req["method"] == "transaction_by_id":
+            return rpc.rpc_success_response(database.transaction_by_id(req["params"]["transactionId"]), req["id"])
 
-            return
         elif req["method"] == "transactions_by_asset_code":
+            return rpc.rpc_success_response(database.transactions_by_asset_code(req["params"]["assetCode"]), req["id"])
 
-            return
         elif req["method"] == "transactions_by_issuer":
+            return rpc.rpc_success_response(database.transactions_by_issuer(req["params"]["issuer"]), req["id"])
 
-            return
         elif req["method"] == "transactions_by_issuer_by_asset_code":
+            return rpc.rpc_success_response(database.transactions_by_issuer_by_asset_code(req["params"]["issuer"], req["params"]["assetCode"]), req["id"])
 
-            return
         elif req["method"] == "transactions_by_public_key":
+            return rpc.rpc_success_response(database.transactions_by_public_key(req["params"]["publicKey"]), req["id"])
 
-            return
         elif req["method"] == "transactions_in_mempool":
+            database.chain_full_url = app.config["chain_url"] + ":" + app.config["chain_port"]
+            if app.config["chain_api_key"] is not None and app.config["chain_api_key"] is not "":
+                database.chain_api_key = app.config["chain_api_key"]
+            return rpc.rpc_success_response(database.transactions_in_mempool(), req["id"])
 
-            return
+
         elif req["method"] == "average_block_delay":
-
             return
+
+        elif req["method"] == "average_block_delay_for_last_n_blocks":
+            return
+
+        elif req["method"] == "average_block_delay_between_blocks":
+            return
+
         elif req["method"] == "current_block_height":
+            return rpc.rpc_success_response(database.current_block_height(), req["id"])
 
-            return
         elif req["method"] == "block_difficulty":
-
             return
+
         elif req["method"] == "block_size_by_id":
-
             return
+
     except:
         return rpc.make_error_resp(-32603, rpc.rpc_errors[-32603], None)
