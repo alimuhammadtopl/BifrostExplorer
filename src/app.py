@@ -27,6 +27,10 @@ def setup_test():
 def rpc_handler():
     try:
         req = request.get_json()
+        validation_proposition = rpc.validate_request(req)
+        if validation_proposition != 0:
+            rpc.error_response(validation_proposition, rpc.rpc_errors[validation_proposition], req["id"])
+            
         ###Checking for api_key in request if specified in config file
         if "app_api_key" in app.config:
             if app.config["app_api_key"] is not "" and app.config["app_api_key"] is not None:
@@ -35,15 +39,11 @@ def rpc_handler():
                 if request_api_key is not app.config["app_api_key"]:
                     return rpc.error_response(-30001, rpc.application_errors[-30001], None)
 
-        database = Database(app.config["database_path"])
-
         ###Try to minimize number of queries frontend would need so make sure to serve more information if possible
         ###For example: return list of transaction jsons for get_transactions_by_block_id instead of just list of transaction ids so clients dont have to re-query
         ###Dont expose too many of the LokiPy endpoints for use via the app's api because that increases requests to the node which this app is attempting to subvert
 
-        validation_proposition = rpc.validate_request(req)
-        if validation_proposition != 0:
-            rpc.error_response(validation_proposition, rpc.rpc_errors[validation_proposition], req["id"])
+        database = Database(app.config["database_path"])
 
         if req["method"] == "block_by_id":
             if "blockHash" in req["params"]:

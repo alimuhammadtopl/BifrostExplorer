@@ -45,8 +45,7 @@ def error_response(code, msg, id):
     r["id"] = id
     return json.dumps(r)
 
-
-def validate_request(request):
+def validate_request(req):
     try:
         assert req["jsonrpc"] == "2.0"
         # if req["method"] not in methods:
