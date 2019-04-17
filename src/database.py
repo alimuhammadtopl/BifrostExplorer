@@ -22,7 +22,6 @@ class Database:
 
 
     def parse_transaction_and_update_adresses_table(self, transaction_result):
-        print("----------------Entered parse_transaction_and_update_adresses_table")
         addresses_set = set()
         if "to" in transaction_result:
             for to_instance in transaction_result["to"]:
@@ -56,7 +55,6 @@ class Database:
 
 
     def parse_transaction_and_update_assets_table(self, transaction_result):
-        print("----------------Entered parse_transaction_and_update_assets_table")
         if "assetCode" in transaction_result:
             try:
                 c = self.cur.execute("SELECT transactions FROM assets WHERE assetCode=?", (transaction_result["assetCode"],))
@@ -90,7 +88,6 @@ class Database:
 
 
     def parse_transactions_array_and_update_tables(self, txs_array):
-        print(">>>>>>>>>>>>>>>>>>>>>>Entered parse_transactions_array_and_update_tables")
         for tx in txs_array:
             try:
                 transaction_result = self.loki_obj.getTransactionById(tx["txHash"])["result"]
@@ -117,10 +114,8 @@ class Database:
                 print("Getting transaction by id and parsing result failed: ", e)
                 raise
 
-        # c = self.cur.execute("SELECT * FROM transactions WHERE txHash=?", (transaction_result["txHash"],))
-        # data = c.fetchall()
 
-
+    ###Initialize database from chain###
     def init(self):
         ### Settings the url and apiKey of the database's LokiPy instance
         self.loki_obj = Requests.LokiPy()
@@ -190,7 +185,7 @@ class Database:
             ###transactions Table###
             self.parse_transactions_array_and_update_tables(history_instance["txs"])
         except:
-            print("Insert failure: Could not insert into blocks table. Likely blockNumber already exists. If error persists old database may to be deleted")
+            print("Insert failure: Could not insert into blocks table. Likely blockNumber already exists. If error persists old database may need to be deleted")
             ###To prevent entering below while loop since if insert failed because blockNumber already exists then it is likely that previous blockNumbers (parent blocks) also exist
             # history_instance["parentId"] = None
 
@@ -207,7 +202,7 @@ class Database:
         self.conn.close()
         print("Finished initializing db")
 
-
+    ###Query chain and update database###
     def query_chain_and_update_database(self):
         print("======================Entered query_chain_and_update_database=======================")
         history = np.array(self.loki_obj.printChain()["result"]["history"].split(','))
@@ -234,201 +229,3 @@ class Database:
             data = c.fetchall()
         self.conn.commit()
         self.conn.close()
-
-    ###########################################################
-    ##############Query database for api endpoints#############
-    ###########################################################
-
-    def block_by_id(self, block_id):
-            self.conn = sqlite3.connect(self.filename)
-            self.cur = self.conn.cursor()
-            c = self.cur.execute("SELECT blockJson FROM blocks WHERE blockHash=?", (block_id,))
-            data = c.fetchone()
-            if data is not None:
-                response = json.loads(data[0])
-            else:
-                response = None
-            self.conn.close()
-            return response
-
-    def block_by_number(self, block_number):
-            self.conn = sqlite3.connect(self.filename)
-            self.cur = self.conn.cursor()
-            c = self.cur.execute("SELECT blockJson FROM blocks WHERE blockNumber=?", (block_number,))
-            data = c.fetchone()
-            if data is not None:
-                response = json.loads(data[0])
-            else:
-                response = None
-            self.conn.close()
-            return response
-
-    def transaction_by_id(self, tx_id):
-            self.conn = sqlite3.connect(self.filename)
-            self.cur = self.conn.cursor()
-            c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (tx_id,))
-            data = c.fetchone()
-            if data is not None:
-                response = json.loads(data[0])
-            else:
-                response = None
-            self.conn.close()
-            return response
-
-    ### Returns transaction jsons for all transactions the entered public key is involved in as a to or from address (note: issuers are not included)
-    ###Consider removing "transactions" field from result json to standardize the results for instance with transaction_from_mempool
-    def transactions_by_public_key(self, public_key):
-            self.conn = sqlite3.connect(self.filename)
-            self.cur = self.conn.cursor()
-            c = self.cur.execute("SELECT transactions FROM addresses WHERE publicKey=?", (public_key,))
-            data = c.fetchone()
-            tx_jsons = np.array([])
-            if data is not None:
-                transactions = np.array(data[0].split(","))
-                for transaction in transactions:
-                    c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (transaction,))
-                    data = c.fetchone()
-                    if data is not None:
-                        tx_jsons = np.append(tx_jsons, json.loads(data[0]))
-            # response = {
-            #     "transactions": tx_jsons.tolist()
-            # }
-            self.conn.close()
-            return tx_jsons.tolist()
-
-    def transactions_by_block_number(self, block_number):
-            self.conn = sqlite3.connect(self.filename)
-            self.cur = self.conn.cursor()
-            c = self.cur.execute("SELECT transactions FROM blocks WHERE blockNumber=?", (block_number,))
-            data = c.fetchone()
-            tx_jsons = np.array([])
-            if data is not None:
-                transactions = np.array(data[0].split(","))
-                for transaction in transactions:
-                    c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (transaction,))
-                    data = c.fetchone()
-                    if data is not None:
-                        tx_jsons = np.append(tx_jsons, json.loads(data[0]))
-
-            # response = {
-            #     "transactions": tx_jsons.tolist()
-            # }
-            self.conn.close()
-            return tx_jsons.tolist()
-
-    def transactions_by_block_id(self, block_id):
-            self.conn = sqlite3.connect(self.filename)
-            self.cur = self.conn.cursor()
-            c = self.cur.execute("SELECT transactions FROM blocks WHERE blockHash=?", (block_id,))
-            data = c.fetchone()
-            tx_jsons = np.array([])
-            if data is not None:
-                transactions = np.array(data[0].split(","))
-                for transaction in transactions:
-                    c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (transaction,))
-                    data = c.fetchone()
-                    if data is not None:
-                        tx_jsons = np.append(tx_jsons, json.loads(data[0]))
-            # response = {
-            #     "transactions": tx_jsons.tolist()
-            # }
-            self.conn.close()
-            return tx_jsons.tolist()
-
-    def transactions_by_asset_code(self, asset_code):
-            self.conn = sqlite3.connect(self.filename)
-            self.cur = self.conn.cursor()
-            c = self.cur.execute("SELECT transactions FROM assets WHERE assetCode=?", (asset_code,))
-            data = c.fetchone()
-            tx_jsons = np.array([])
-            if data is not None:
-                transactions = np.array(data[0].split(","))
-                for transaction in transactions:
-                    c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (transaction,))
-                    data = c.fetchone()
-                    if data is not None:
-                        tx_jsons= np.append(tx_jsons, json.loads(data[0]))
-            # response = {
-            #     "transactions": tx_jsons.tolist()
-            # }
-            self.conn.close()
-            return tx_jsons.tolist()
-
-    def transactions_by_issuer(self, issuer):
-            self.conn = sqlite3.connect(self.filename)
-            self.cur = self.conn.cursor()
-            c = self.cur.execute("SELECT transactions FROM issuers WHERE issuer=?", (issuer,))
-            data = c.fetchone()
-            tx_jsons = np.array([])
-            if data is not None:
-                transactions = np.array(data[0].split(","))
-                for transaction in transactions:
-                    c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (transaction,))
-                    data = c.fetchone()
-                    if data is not None:
-                        tx_jsons = np.append(tx_jsons, json.loads(data[0]))
-            # response = {
-            #     "transactions": tx_jsons.tolist()
-            # }
-            self.conn.close()
-            return tx_jsons.tolist()
-
-    def transactions_by_issuer_by_asset_code(self, issuer, asset_code):
-            self.conn = sqlite3.connect(self.filename)
-            self.cur = self.conn.cursor()
-            c = self.cur.execute("SELECT transactions FROM issuers WHERE issuer=?", (issuer,))
-            data = c.fetchone()
-            tx_jsons = np.array([])
-            if data is not None:
-                issuer_transactions = np.array(data[0].split(","))
-                c = self.cur.execute("SELECT transactions FROM assets WHERE assetCode=?", (asset_code,))
-                data = c.fetchone()
-                if data is not None:
-                    asset_code_transactions = np.array(data[0].split(","))
-                    transactions = np.intersect1d(issuer_transactions, asset_code_transactions)
-                    # transactions = list(set(issuer_transactions).intersection(asset_code_transactions))
-                    for transaction in transactions:
-                        c = self.cur.execute("SELECT txJson FROM transactions WHERE txHash=?", (transaction,))
-                        data = c.fetchone()
-                        if data is not None:
-                            tx_jsons = np.append(tx_jsons, json.loads(data[0]))
-            # response = {
-            #     "transactions": tx_jsons.tolist()
-            # }
-            self.conn.close()
-            return tx_jsons.tolist()
-
-    def transactions_in_mempool(self):
-        try:
-            self.loki_obj = Requests.LokiPy()
-            self.loki_obj.setUrl(self.chain_full_url)
-            if self.chain_api_key is not None:
-                self.loki_obj.setApiKey(self.chain_api_key)
-            response = self.loki_obj.getMempool()
-            result = json.loads(json.dumps(response))["result"]
-            return result
-        except Exception as e:
-            print("Could not get mempool from chain: ", e)
-            pass
-
-    def number_of_confirmed_transactions(self):
-            self.conn = sqlite3.connect(self.filename)
-            self.cur = self.conn.cursor()
-            c = self.cur.execute("SELECT Count(*) FROM transactions")
-            data = c.fetchone()
-            if data is not None:
-                response = {
-                    "number": data[0]
-                }
-            return response
-
-    def current_block_height(self):
-            self.conn = sqlite3.connect(self.filename)
-            self.cur = self.conn.cursor()
-            c = self.cur.execute("SELECT MAX(blockNumber) FROM blocks")
-            data = c.fetchone()
-            if data is not None:
-                response = {
-                    "height": data[0]
-                }
-            return response

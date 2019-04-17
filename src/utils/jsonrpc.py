@@ -1,13 +1,13 @@
 import copy
 import json
 
-success_response = {
+success_response_json = {
     "jsonrpc": "2.0",
     "id": 1,
     "result": "This is the default result. You are seeing this because the endpoint returning this has not been fully setup yet",
 }
 
-error_response = {
+error_response_json = {
     "jsonrpc": "2.0",
     "error": {
         "code": 0,
@@ -26,19 +26,20 @@ rpc_errors = {
 }
 
 application_errors = {
-    -30000: "unknown error"
+    -30000: "unknown error",
+    -30001: "invalid api key"
 
     # -30017: "endpoint currently unimplemented"
 }
 
-def rpc_success_response(result, id):
-    r = copy.deepcopy(success_response)
+def success_response(result, id):
+    r = copy.deepcopy(success_response_json)
     r["result"] = result
     r["id"] = id
     return json.dumps(r)
 
-def make_error_resp(code, msg, id):
-    r = copy.deepcopy(error_response)
+def error_response(code, msg, id):
+    r = copy.deepcopy(error_response_json)
     r["error"]["code"] = code
     r["error"]["message"] = msg
     r["id"] = id
