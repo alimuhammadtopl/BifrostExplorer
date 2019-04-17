@@ -130,7 +130,7 @@ class Database:
             # Querying parentId of 1st block returns 500 error None.get
             # printJson(loki_obj.getBlockById("4vJ9JU1bJJE96FWSJKvHsmmFADCg4gpZQff4P3bkLKi"))
         except Exception as e:
-            print("Querying chain for initialization failed: ", e)
+            print("Querying chain for initialization failed: \n", e)
             raise
 
         ###database connection intialization####
@@ -216,9 +216,9 @@ class Database:
         # for row in c:
         #     print(row);
         c = self.cur.execute("SELECT * FROM blocks WHERE blockNumber=?", (history_instance["blockNumber"],))
-        data = c.fetchall()
+        data = c.fetchone()
         ###Accessing parent of topmost block until a block is queried that already exists in db
-        while len(data) < 1:
+        while data is None:
             self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?)", (history_instance["blockNumber"], history_instance["id"], history_instance["timestamp"], history_instance["signature"], parseJson.create_transactions_string(history_instance), history_instance["parentId"], json.dumps(history_instance)))
             self.parse_transactions_array_and_update_tables(history_instance["txs"])
             self.parse_transaction_and_update_adresses_table(history_instance["txs"])
@@ -226,6 +226,7 @@ class Database:
             ###Getting parent of topmost block
             history_instance = self.loki_obj.getBlockById(history[current_index])["result"]
             c = self.cur.execute("SELECT * FROM blocks WHERE blockNumber=?", (history_instance["blockNumber"],))
-            data = c.fetchall()
+            data = c.fetchone()
+
         self.conn.commit()
         self.conn.close()

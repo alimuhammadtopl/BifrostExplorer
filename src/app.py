@@ -27,6 +27,14 @@ def setup_test():
 def rpc_handler():
     try:
         req = request.get_json()
+        ###Checking for api_key in request if specified in config file
+        if "app_api_key" in app.config:
+            if app.config["app_api_key"] is not "" and app.config["app_api_key"] is not None:
+                headers = request.headers
+                request_api_key = headers.get("api-key")
+                if request_api_key is not app.config["app_api_key"]:
+                    return rpc.error_response(-30001, rpc.application_errors[-30001], None)
+
         database = Database(app.config["database_path"])
 
         ###Try to minimize number of queries frontend would need so make sure to serve more information if possible
