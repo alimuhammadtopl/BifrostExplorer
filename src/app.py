@@ -5,18 +5,22 @@ from flask_cors import CORS
 from src.database import Database
 import src.apiEndpoints as endpoints
 import src.utils.jsonrpc as rpc
-
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
 CORS(app)
+
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=[]
+)
 
 ###Read configurations from config
 with open('config.json') as f:
     config = json.load(f)
     app.config.update(config)
-
-# def print_json(json_data):
-#     print(json.dumps(json_data, indent = 4))
 
 @app.route("/", methods=["POST"])
 def setup_test():
@@ -24,13 +28,13 @@ def setup_test():
 
 ###Creating a new database instance for each query to ensure connection safety between api threads
 @app.route("/api", methods=["POST"])
-def rpc_handler():
+def api_rpc_handler():
     try:
         req = request.get_json()
         validation_proposition = rpc.validate_request(req)
         if validation_proposition != 0:
             rpc.error_response(validation_proposition, rpc.rpc_errors[validation_proposition], req["id"])
-            
+
         ###Checking for api_key in request if specified in config file
         if "app_api_key" in app.config:
             if app.config["app_api_key"] is not "" and app.config["app_api_key"] is not None:
@@ -38,10 +42,6 @@ def rpc_handler():
                 request_api_key = headers.get("api-key")
                 if request_api_key is not app.config["app_api_key"]:
                     return rpc.error_response(-30001, rpc.application_errors[-30001], None)
-
-        ###Try to minimize number of queries frontend would need so make sure to serve more information if possible
-        ###For example: return list of transaction jsons for get_transactions_by_block_id instead of just list of transaction ids so clients dont have to re-query
-        ###Dont expose too many of the LokiPy endpoints for use via the app's api because that increases requests to the node which this app is attempting to subvert
 
         database = Database(app.config["database_path"])
 
@@ -103,12 +103,6 @@ def rpc_handler():
             else:
                 return rpc.error_response(-32602, rpc.rpc_errors[-32602], None)
 
-        elif req["method"] == "transactions_in_mempool":
-            database.chain_full_url = app.config["chain_url"] + ":" + app.config["chain_port"]
-            if app.config["chain_api_key"] is not None and app.config["chain_api_key"] is not "":
-                database.chain_api_key = app.config["chain_api_key"]
-            return rpc.success_response(endpoints.transactions_in_mempool(database), req["id"])
-
         elif req["method"] == "average_block_delay":
             return rpc.success_response(endpoints.average_block_delay(database), req["id"])
 
@@ -133,3 +127,40 @@ def rpc_handler():
     except Exception as e:
         ###Internal error
         return rpc.error_response(-32603, rpc.rpc_errors[-32603] + ": " + str(e), None)
+
+###Separating routes that directly query node so that rate limiting can be applied
+@app.route("/node", methods=["POST"])
+@limiter.limit("1/3seconds")
+def node_rpc_handler():
+    try:
+        req = request.get_json()
+        validation_proposition = rpc.validate_request(req)
+        if validation_proposition != 0:
+            rpc.error_response(validation_proposition, rpc.rpc_errors[validation_proposition], req["id"])
+
+        ###Checking for api_key in request if specified in config file
+        if "app_api_key" in app.config:
+            if app.config["app_api_key"] is not "" and app.config["app_api_key"] is not None:
+                headers = request.headers
+                request_api_key = headers.get("api-key")
+                if request_api_key is not app.config["app_api_key"]:
+                    return rpc.error_response(-30001, rpc.application_errors[-30001], None)
+
+        database = Database(app.config["database_path"])
+        if req["method"] == "transactions_in_mempool":
+            database.chain_full_url = app.config["chain_url"] + ":" + app.config["chain_port"]
+            if app.config["chain_api_key"] is not None and app.config["chain_api_key"] is not "":
+                database.chain_api_key = app.config["chain_api_key"]
+            return rpc.success_response(endpoints.transactions_in_mempool(database), req["id"])
+        else:
+            ###Method not found
+            return rpc.error_response(-32601, rpc.rpc_errors[-32601], None)
+
+    except Exception as e:
+        ###Internal error
+        return rpc.error_response(-32603, rpc.rpc_errors[-32603] + ": " + str(e), None)
+
+###Handling the rate limit error message response
+@app.errorhandler(429)
+def rate_limit_error_handler(e):
+    return rpc.error_response(-30002, rpc.application_errors[-30002] + ": " + str(e), None)

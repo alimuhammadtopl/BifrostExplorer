@@ -27,9 +27,9 @@ rpc_errors = {
 
 application_errors = {
     -30000: "unknown error",
-    -30001: "invalid api key"
-
-    # -30017: "endpoint currently unimplemented"
+    -30001: "invalid api key",
+    -30002: "rate limit exceeded",
+    -30017: "endpoint currently unimplemented"
 }
 
 def success_response(result, id):

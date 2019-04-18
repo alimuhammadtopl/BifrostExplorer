@@ -203,30 +203,33 @@ class Database:
         print("Finished initializing db")
 
     ###Query chain and update database###
+    ###Method is wrapped in try block with except pass to ensure that script continues to attempt updates to database even if it fails at some instance, for example, due to closed connection to chain
     def query_chain_and_update_database(self):
-        print("======================Entered query_chain_and_update_database=======================")
-        history = np.array(self.loki_obj.printChain()["result"]["history"].split(','))
-        ###database connection intialization####
-        self.conn = sqlite3.connect(self.filename)
-        self.cur = self.conn.cursor()
-        current_index = -1
-        ###Getting topmost block
-        history_instance = self.loki_obj.getBlockById(history[current_index])["result"]
-        # c = self.curr.execute("SELECT * FROM blocks");
-        # for row in c:
-        #     print(row);
-        c = self.cur.execute("SELECT * FROM blocks WHERE blockNumber=?", (history_instance["blockNumber"],))
-        data = c.fetchone()
-        ###Accessing parent of topmost block until a block is queried that already exists in db
-        while data is None:
-            self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?)", (history_instance["blockNumber"], history_instance["id"], history_instance["timestamp"], history_instance["signature"], parseJson.create_transactions_string(history_instance), history_instance["parentId"], json.dumps(history_instance)))
-            self.parse_transactions_array_and_update_tables(history_instance["txs"])
-            self.parse_transaction_and_update_adresses_table(history_instance["txs"])
-            current_index = current_index - 1
-            ###Getting parent of topmost block
+        try:
+            print("======================Entered query_chain_and_update_database=======================")
+            history = np.array(self.loki_obj.printChain()["result"]["history"].split(','))
+            ###database connection intialization####
+            self.conn = sqlite3.connect(self.filename)
+            self.cur = self.conn.cursor()
+            current_index = -1
+            ###Getting topmost block
             history_instance = self.loki_obj.getBlockById(history[current_index])["result"]
             c = self.cur.execute("SELECT * FROM blocks WHERE blockNumber=?", (history_instance["blockNumber"],))
             data = c.fetchone()
+            ###Accessing parent of topmost block until a block is queried that already exists in db
+            while data is None:
+                self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?)", (history_instance["blockNumber"], history_instance["id"], history_instance["timestamp"], history_instance["signature"], parseJson.create_transactions_string(history_instance), history_instance["parentId"], json.dumps(history_instance)))
+                self.parse_transactions_array_and_update_tables(history_instance["txs"])
+                self.parse_transaction_and_update_adresses_table(history_instance["txs"])
+                current_index = current_index - 1
+                ###Getting parent of topmost block
+                history_instance = self.loki_obj.getBlockById(history[current_index])["result"]
+                c = self.cur.execute("SELECT * FROM blocks WHERE blockNumber=?", (history_instance["blockNumber"],))
+                data = c.fetchone()
 
-        self.conn.commit()
-        self.conn.close()
+            self.conn.commit()
+            self.conn.close()
+
+        except Exception as e:
+            print("Unable to update database: \n", e)
+            pass
