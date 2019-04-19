@@ -130,7 +130,11 @@ def api_rpc_handler():
 
 ###Separating routes that directly query node so that rate limiting can be applied
 @app.route("/node", methods=["POST"])
-@limiter.limit("1/3seconds")
+@limiter.limit(
+    "1/3seconds"
+    if "api_rate_limit" not in app.config or app.config["app_api_rate_limit"] is None
+    else app.config["app_api_rate_limit"]
+    )
 def node_rpc_handler():
     try:
         req = request.get_json()

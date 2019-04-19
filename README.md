@@ -409,7 +409,7 @@ None
 
 ### 13. Get the transactions currently in the mempool
 
-**Note: This endpoint is rate limited since it directly queries the node for mempool information**
+**--Note: This endpoint is rate limited since it directly queries the node for mempool information--**
 
 **URL Route** : `/node`
 
