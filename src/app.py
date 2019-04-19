@@ -45,7 +45,7 @@ def api_rpc_handler():
 
         database = Database(app.config["database_path"])
 
-        if req["method"] == "block_by_id":
+        if req["method"] == "block_by_hash":
             if "blockHash" in req["params"]:
                 return rpc.success_response(endpoints.block_by_id(database, req["params"]["blockHash"]), req["id"])
             else:
@@ -64,7 +64,7 @@ def api_rpc_handler():
             else:
                 return rpc.error_response(-32602, rpc.rpc_errors[-32602], None)
 
-        elif req["method"] == "transactions_by_block_id":
+        elif req["method"] == "transactions_by_block_hash":
             if "blockHash" in req["params"]:
                 return rpc.success_response(endpoints.transactions_by_block_id(database, req["params"]["blockHash"]), req["id"])
             else:
@@ -73,9 +73,9 @@ def api_rpc_handler():
         elif req["method"] == "number_of_confirmed_transactions":
             return rpc.success_response(endpoints.number_of_confirmed_transactions(database), req["id"])
 
-        elif req["method"] == "transaction_by_id":
-            if "transactionId" in req["params"]:
-                return rpc.success_response(endpoints.transaction_by_id(database, req["params"]["transactionId"]), req["id"])
+        elif req["method"] == "transaction_by_hash":
+            if "transactionHash" in req["params"]:
+                return rpc.success_response(endpoints.transaction_by_id(database, req["params"]["transactionHash"]), req["id"])
             else:
                 return rpc.error_response(-32602, rpc.rpc_errors[-32602], None)
 
