@@ -9,11 +9,11 @@ The application uses a series of python packages that can be imported by pip or 
 ## Installation
 To get a the BifrostExplorer development environment running execute the following commands on a digital ocean droplet. If you run into any permission errors, preface the offending command with sudo.
 
--`git clone https://github.com/Topl/BifrostExplorer`
--`cd TexasCoastalExchange`
--`pip3 install -r requirements.txt`
--`ufw allow 5000`
--`nohup python3 start.py &`
+- `git clone https://github.com/Topl/BifrostExplorer`
+- `cd TexasCoastalExchange`
+- `pip3 install -r requirements.txt`
+- `ufw allow 5000`
+- `nohup python3 start.py &`
 
 Now, open `http://YOUR_DROPLET_IP:5000/` in your browser. You should see `Hello, your server is working!` if you've done your setup correctly.
 
