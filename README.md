@@ -7,7 +7,7 @@ The BifrostExplorer is a python application with a sqlite3 database that serves 
 The application uses a series of python packages that can be imported by pip or some other python package manager using the following command in the project's root directory: `pip install -r requirements.txt`
 
 ## Installation
-To get a the BifrostExplorer development environment running execute the following commands on a digital ocean droplet. If you run into any permission errors, preface the offending command with sudo.
+To get a the BifrostExplorer development environment running execute the following commands on a digital ocean droplet. If you run into any permission errors, preface the offending command with `sudo`.
 
 - `git clone https://github.com/Topl/BifrostExplorer`
 - `cd TexasCoastalExchange`
