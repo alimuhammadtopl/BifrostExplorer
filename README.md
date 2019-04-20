@@ -26,7 +26,7 @@ You can configure your BifrostExplorer instance by editing the settings in the c
 - `"app_api_port"`: "<port_on_which_to_serve_app_api",
 - `"chain_api_key"`: "<api_key_for_node_queries>", (Optional)
 - `"app_api_key"`: "<api_key_for_queries_to_app>", (Optional)
-- `"app_api_rate_limit"`: "<api_rate_limit_according_to_flask_limiter_input_parameters>" (Optional)
+- `"app_api_rate_limit"`: "<api_rate_limit_according_to_flask_limiter_input_parameters>" (Optional - default is set to "1/3seconds" - only used to limit transactions_in_mempool endpoint method)
 
 ## API
 
