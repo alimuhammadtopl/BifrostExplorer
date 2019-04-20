@@ -17,6 +17,16 @@ To get a the BifrostExplorer development environment running execute the followi
 
 Now, open `http://YOUR_DROPLET_IP:5000/` in your browser. You should see `Hello, your server is working!` if you've done your setup correctly.
 
+## Settings 
+You can configure your BifrostExplorer instance by editing the settings in the config.json file. The various settable json parameters are:
+- `"database_path"`: "<path_to_database/database_name>",
+- `"chain_url"`: "<url_of_chain_node_to_query>",
+- `"chain_port"`: "<chain_node_port>",
+- `"query_chain_interval"`: <integer_seconds_of_chain_query_interval_for_new_information>,
+- `"app_api_port"`: "<port_on_which_to_serve_app_api",
+- `"chain_api_key"`: "<api_key_for_node_queries>", (Optional)
+- `"app_api_key"`: "<api_key_for_queries_to_app>", (Optional)
+- `"app_api_rate_limit"`: "<api_rate_limit_according_to_flask_limiter_input_parameters>" (Optional)
 
 ## API
 
