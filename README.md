@@ -10,7 +10,7 @@ The application uses a series of python packages that can be imported by pip or 
 To get a the BifrostExplorer development environment running execute the following commands on a digital ocean droplet. If you run into any permission errors, preface the offending command with `sudo`.
 
 - `git clone https://github.com/Topl/BifrostExplorer`
-- `cd TexasCoastalExchange`
+- `cd BifrostExplorer`
 - `pip3 install -r requirements.txt`
 - `ufw allow 5000`
 - `nohup python3 start.py &`
