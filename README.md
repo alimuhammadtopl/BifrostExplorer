@@ -448,7 +448,7 @@ None
 {"jsonrpc": "2.0", "id": "1", "result": [{"txType": "AssetTransfer", "txHash": "6UmYj92yGR3zoC5VfVqZyxFu5LaK17aQRxG44svQShRY", "timestamp": 1555673472771, "signatures": ["61LefEehWWMiCmzrMCLKq4T7x82mtAVR4GyJ1MSr6MCbvmhUzSijfJCz8K8R7tuRfYfELtP9vEZRJPQDLYawhFYA", "316jXks2Syym3ajtWi3LE7T1gMy3f8t9QKgEm5nZnGp9e7SbGkhYautik1r6vQACL7SFNusG8YxexQRRZDeVLLTg", "5efqtpejsWVft3MFpzV3SHM63H1cVh1VQWRoGRoDT4mGDgrSGfrFgXSSmtABHjvGJoFMwVnyahf3uN1zf5pFtWUR", "2KsCxgbMmHGF1h4wrY5LRMnh7EWcCQtXjhZ3xvcGuMixuQeiYVsxGXLYM3sarDVDEcwGL2UhQjvipcKn9W9u1UUZ"], "newBoxes": ["Cu2EBU7fkAURjBBbcFn2ttSMwzukesqDzEypUtoyjNrd", "5dYNpUbvgoAnLE98Ekg7Ae6aSLNfVuo3VZoiZPB15n42"], "data": "", "issuer": "6sYyiTguyQ455w2dGEaNbrwkAWAEYV1Zk6FtZMknWDKQ", "to": [{"proposition": "6sYyiTguyQ455w2dGEaNbrwkAWAEYV1Zk6FtZMknWDKQ", "value": 20}, {"proposition": "A9vRt6hw7w4c7b4qEkQHYptpqBGpKM5MGoXyrkGCbrfb", "value": 20}], "assetCode": "testAssets", "from": [{"proposition": "6sYyiTguyQ455w2dGEaNbrwkAWAEYV1Zk6FtZMknWDKQ", "nonce": -4631590181805496762}, {"proposition": "6sYyiTguyQ455w2dGEaNbrwkAWAEYV1Zk6FtZMknWDKQ", "nonce": -7156852644579571935}, {"proposition": "6sYyiTguyQ455w2dGEaNbrwkAWAEYV1Zk6FtZMknWDKQ", "nonce": 5449475831238011372}, {"proposition": "6sYyiTguyQ455w2dGEaNbrwkAWAEYV1Zk6FtZMknWDKQ", "nonce": 4036637193242220502}], "boxesToRemove": ["7RTiAuc2FYGhNJqns1D7fm6Fv11r6cwP65EKH4uwPvTp", "5UfJWbCZLs7cWL4iknNUHq3xuqtZRerPKrY8Cpg3EptR", "EoTQ37LfkxoSzCSQmTGGkr5afeafSsfyyG1mvwQra1xv", "9iH5h3XwAaBZnsEg1yUWQkQCcpsEEGbpm5wSsTFPQeis"], "fee": 0}]}
 ```
 
-##### Failure Response (if chain cannot be queried for mempool information)
+##### Failure Response (if chain cannot be queried for mempool information)
 
 ```json
 {"jsonrpc": "2.0", "id": "1", "result": null}
