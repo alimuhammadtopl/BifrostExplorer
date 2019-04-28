@@ -453,3 +453,8 @@ None
 ```json
 {"jsonrpc": "2.0", "id": "1", "result": null}
 ```
+
+## License
+LokiJS is licensed under the
+[Mozilla Public License version 2.0 (MPL 2.0)](https://www.mozilla.org/en-US/MPL/2.0), also included
+in our repository in the `LICENSE` file.
