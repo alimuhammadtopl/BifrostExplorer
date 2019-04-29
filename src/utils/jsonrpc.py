@@ -48,8 +48,6 @@ def error_response(code, msg, id):
 def validate_request(req):
     try:
         assert req["jsonrpc"] == "2.0"
-        # if req["method"] not in methods:
-        #         return -32601
         assert isinstance(req["id"], int)
         return 0
     except:

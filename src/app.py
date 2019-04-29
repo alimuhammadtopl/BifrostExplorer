@@ -1,5 +1,10 @@
 import json
 import time
+import shutil
+import os
+import sys
+import sqlite3
+from waitress import serve
 from flask import Flask, request
 from flask_cors import CORS
 from src.database import Database
@@ -7,6 +12,7 @@ import src.apiEndpoints as endpoints
 import src.utils.jsonrpc as rpc
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+
 
 app = Flask(__name__)
 CORS(app)
@@ -18,7 +24,7 @@ limiter = Limiter(
 )
 
 ###Read configurations from config
-with open('config.json') as f:
+with open(os.path.abspath(os.path.join('','config.json'))) as f:
     config = json.load(f)
     app.config.update(config)
 
@@ -152,7 +158,7 @@ def node_rpc_handler():
 
         database = Database(app.config["database_path"])
         if req["method"] == "transactions_in_mempool":
-            database.chain_full_url = app.config["chain_url"] + ":" + app.config["chain_port"]
+            database.chain_full_url = app.config["chain_url"] + ":" + app.config["chain_port"] + "/"
             if app.config["chain_api_key"] is not None and app.config["chain_api_key"] is not "":
                 database.chain_api_key = app.config["chain_api_key"]
             return rpc.success_response(endpoints.transactions_in_mempool(database), req["id"])
@@ -168,3 +174,7 @@ def node_rpc_handler():
 @app.errorhandler(429)
 def rate_limit_error_handler(e):
     return rpc.error_response(-30002, rpc.application_errors[-30002] + ": " + str(e), None)
+
+
+def start_flaskapp(config):
+    serve(app, host='0.0.0.0', port=app.config["app_api_port"])
