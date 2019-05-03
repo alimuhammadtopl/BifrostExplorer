@@ -20,7 +20,8 @@
     "transactions_by_public_key",
     "average_block_delay",
     "average_delay_between_specified_blocks",
-    "current_block_height"
+    "current_block_height",
+    "transactions_in_mempool"
   ],
   "param_primitives": [
     "str",
@@ -66,6 +67,7 @@
       "block1": "int",
       "block2": "int"
     }],
-    "current_block_height": []
+    "current_block_height": [],
+    "transactions_in_mempool": []
   }
 }

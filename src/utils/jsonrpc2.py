@@ -20,7 +20,7 @@ def validate_obj(obj, config):
     if not isinstance(obj, dict):
         return make_error_resp(const.PARSE_ERR_CODE, const.PARSE_ERR, None)
     if "id" not in obj:
-        _id = None
+        return make_error_resp(const.INVALID_REQ_CODE, const.INVALID_REQ, None)
     else:
         _id = obj["id"]
         if not (isinstance(_id, int) or isinstance(_id, str) or _id is None):
