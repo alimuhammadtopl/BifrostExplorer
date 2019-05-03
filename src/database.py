@@ -2,7 +2,7 @@ from LokiPy import Requests
 import json
 import numpy as np
 import sqlite3
-import src.utils.parseJson as parseJson
+import src.utils.parse_json as parse_json
 
 
 #################################################################
@@ -92,12 +92,12 @@ class Database:
             try:
                 transaction_result = self.loki_obj.getTransactionById(tx["txHash"])["result"]
                 try:
-                    self.cur.execute("INSERT INTO transactions VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (transaction_result["txHash"], transaction_result["txType"], transaction_result["timestamp"], transaction_result["blockNumber"], transaction_result["blockHash"], parseJson.create_to_addresses_string(transaction_result),
-                    parseJson.create_from_addresses_string(transaction_result),
-                    parseJson.create_new_boxes_string(transaction_result),
-                    parseJson.create_boxes_to_remove_string(transaction_result),
+                    self.cur.execute("INSERT INTO transactions VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", (transaction_result["txHash"], transaction_result["txType"], transaction_result["timestamp"], transaction_result["blockNumber"], transaction_result["blockHash"], parse_json.create_to_addresses_string(transaction_result),
+                    parse_json.create_from_addresses_string(transaction_result),
+                    parse_json.create_new_boxes_string(transaction_result),
+                    parse_json.create_boxes_to_remove_string(transaction_result),
                     transaction_result["fee"],
-                    parseJson.create_signatures_string(transaction_result),
+                    parse_json.create_signatures_string(transaction_result),
                     json.dumps(transaction_result)))
                 except Exception as e:
                     print("Could not insert block into blocks table: ", e)
@@ -159,6 +159,7 @@ class Database:
                                         signature text NOT NULL,
                                         transactions text,
                                         parentId text NOT NULL,
+                                        blockDifficulty text NOT NULL,
                                         blockJson text NOT NULL
                                     ); """
         create_addresses_table = """ CREATE TABLE IF NOT EXISTS addresses (
@@ -181,7 +182,7 @@ class Database:
         ###blocks Table###
         ###TODO: check that block does not already exist in table (insert error occurs when stopping and restarting app quickly and new block hasnt been forged yet)
         try:
-            self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?)", (history_instance["blockNumber"], history_instance["id"], history_instance["timestamp"], history_instance["signature"], parseJson.create_transactions_string(history_instance["txs"]), history_instance["parentId"], json.dumps(history_instance)))
+            self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?,?)", (history_instance["blockNumber"], history_instance["id"], history_instance["timestamp"], history_instance["signature"], parse_json.create_transactions_string(history_instance["txs"]), history_instance["parentId"], history_instance["blockDifficulty"], json.dumps(history_instance)))
             ###transactions Table###
             self.parse_transactions_array_and_update_tables(history_instance["txs"])
         except:
@@ -193,7 +194,7 @@ class Database:
             try:
                 ###If attempting to insert into existing blockNumber this try block will throw an exception and loop execution ends since while condition is forced to fail on exception###
                 history_instance = self.loki_obj.getBlockById(history_instance["parentId"])["result"]
-                self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?)", (history_instance["blockNumber"], history_instance["id"], history_instance["timestamp"], history_instance["signature"], parseJson.create_transactions_string(history_instance), history_instance["parentId"], json.dumps(history_instance)))
+                self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?,?)", (history_instance["blockNumber"], history_instance["id"], history_instance["timestamp"], history_instance["signature"], parse_json.create_transactions_string(history_instance), history_instance["parentId"],  history_instance["blockDifficulty"], json.dumps(history_instance)))
                 self.parse_transactions_array_and_update_tables(history_instance["txs"])
             except:
                 history_instance["parentId"] = None
@@ -218,7 +219,7 @@ class Database:
             data = c.fetchone()
             ###Accessing parent of topmost block until a block is queried that already exists in db
             while data is None:
-                self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?)", (history_instance["blockNumber"], history_instance["id"], history_instance["timestamp"], history_instance["signature"], parseJson.create_transactions_string(history_instance), history_instance["parentId"], json.dumps(history_instance)))
+                self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?,?)", (history_instance["blockNumber"], history_instance["id"], history_instance["timestamp"], history_instance["signature"], parse_json.create_transactions_string(history_instance), history_instance["parentId"],  history_instance["blockDifficulty"], json.dumps(history_instance)))
                 self.parse_transactions_array_and_update_tables(history_instance["txs"])
                 self.parse_transaction_and_update_adresses_table(history_instance["txs"])
                 current_index = current_index - 1

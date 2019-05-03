@@ -1,7 +1,7 @@
 {
   "database_path": "sqlite.db",
-  "chain_url": "http://localhost",
-  "chain_port": "9085",
+  "chain_url": "http://159.89.107.174",
+  "chain_port": "9585",
   "query_chain_interval": 5,
   "chain_api_key": "",
   "app_api_port": "5000",
@@ -68,5 +68,4 @@
     }],
     "current_block_height": []
   }
-}
 }

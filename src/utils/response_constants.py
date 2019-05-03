@@ -1,0 +1,24 @@
+# JSON-RPC 2.0 STANDARD
+PARSE_ERR = "Parse error"
+PARSE_ERR_CODE = -32700
+INVALID_REQ = "Invalid Request"
+INVALID_REQ_CODE = -32600
+NO_METHOD = "Method not found"
+NO_METHOD_CODE = -32601
+INVALID_PARAMS = "Invalid params"
+INVALID_PARAMS_CODE = -32602
+INTERNAL_ERROR = "Internal error"
+INTERNAL_ERROR_CODE = -32603
+
+# APPLICATION SPECIFIC
+NO_RESPONSE = "NO_RESPONSE"
+WIP = "Method is currently being worked on"
+WIP_CODE = -1
+UNKNOWN = "An unknown error occured"
+UNKNOWN_CODE = -2
+INVALID_API_KEY = "Invalid api key"
+INVALID_API_KEY_CODE = -3
+RATE_LIMIT_REACHED = "Rate limit for endpoint reached"
+RATE_LIMIT_REACHED_CODE = -4
+
+#  ADD MORE CONSTANTS HERE
