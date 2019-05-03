@@ -5,6 +5,7 @@ import src.utils.response_constants as const
 import src.utils.jsonrpc2 as rpc
 import json
 import src.endpoint_handlers.handlers_consolidated as hc
+import src.utils.response_constants as const
 
 
 methods = dict()
@@ -12,9 +13,7 @@ methods = dict()
 ###Read configurations from config
 with open(os.path.abspath(os.path.join('','config.json'))) as f:
     config = json.load(f)
-    app.config.update(config)
-
-    for method_name in app.config["method_names"]:
+    for method_name in config["method_names"]:
         methods[method_name] = getattr(hc, method_name)
 
 
