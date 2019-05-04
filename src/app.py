@@ -35,7 +35,7 @@ def setup_test():
 ###Creating a new database instance for each query to ensure connection safety between api threads
 @app.route("/api", methods=["POST"])
 def api_rpc_handler():
-    resp = handle.handle_request(request, app.logger)
+    resp = handle.handle_request(request, app.logger, app.config)
     if resp != const.NO_RESPONSE:
         return json.dumps(resp)
 
@@ -49,24 +49,27 @@ def api_rpc_handler():
     )
 def node_rpc_handler():
     try:
-        evaluation = rpc.validate_request(request)
-        req = request.get_json()
-        evaluation = rpc.validate_obj(req, app.config)
-        if evaluation is True:
-            method_name = req["method"]
-            params = req.get("params", {})
-            _id = req.get("id", None)
-            database = Database(app.config["database_path"])
-            if method_name == "transactions_in_mempool":
-                database.chain_full_url = app.config["chain_url"] + ":" + app.config["chain_port"] + "/"
-                if app.config["chain_api_key"] is not None and app.config["chain_api_key"] is not "":
-                    database.chain_api_key = app.config["chain_api_key"]
-                return json.dumps(rpc.make_success_resp(hc.transactions_in_mempool(database), req["id"]))
+        evaluation_1 = rpc.validate_request(request, app.config)
+        if evaluation_1 is True:
+            req = request.get_json()
+            evaluation_2 = rpc.validate_obj(req, app.config)
+            if evaluation_2 is True:
+                method_name = req["method"]
+                params = req.get("params", {})
+                _id = req.get("id", None)
+                database = Database(app.config["database_path"])
+                if method_name == "transactions_in_mempool":
+                    database.chain_full_url = app.config["chain_url"] + ":" + app.config["chain_port"] + "/"
+                    if app.config["chain_api_key"] is not None and app.config["chain_api_key"] is not "":
+                        database.chain_api_key = app.config["chain_api_key"]
+                    return json.dumps(rpc.make_success_resp(hc.transactions_in_mempool(database), req["id"]))
+                else:
+                    ###Method not found
+                    return json.dumps(make_error_resp(const.NO_METHOD_CODE, const.NO_METHOD, _id))
             else:
-                ###Method not found
-                return json.dumps(make_error_resp(const.NO_METHOD_CODE, const.NO_METHOD, _id))
+                return json.dumps(evaluation_2)
         else:
-            return json.dumps(evaluation)
+            return json.dumps(evaluation_1)
 
     except Exception as e:
         ###Internal error

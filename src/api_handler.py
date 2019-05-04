@@ -17,8 +17,8 @@ with open(os.path.abspath(os.path.join('','config.json'))) as f:
         methods[method_name] = getattr(hc, method_name)
 
 
-def handle_request(request, logger):
-    evaluation = rpc.validate_request(request)
+def handle_request(request, logger, config):
+    evaluation = rpc.validate_request(request, config)
     if evaluation is True:
         req = request.get_json()
         if isinstance(req, list):
