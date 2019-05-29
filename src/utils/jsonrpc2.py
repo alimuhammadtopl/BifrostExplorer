@@ -44,17 +44,17 @@ def validate_obj(obj, config):
 def make_success_resp(result, _id):
     return {
         "jsonrpc": "2.0",
-        "result": result,
-        "id": _id
+        "id": _id,
+        "result": result
     }
 
 
 def make_error_resp(code, msg, _id):
     return {
         "jsonrpc": "2.0",
+        "id": _id,
         "error": {
             "code": code,
             "message": msg
-        },
-        "id": _id
+        }
     }
