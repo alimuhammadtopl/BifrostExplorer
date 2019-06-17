@@ -115,6 +115,7 @@ class Database:
                 raise
 
 
+
     ###Initialize database from chain###
     def init(self):
         ### Settings the url and apiKey of the database's LokiPy instance
@@ -122,11 +123,12 @@ class Database:
         self.loki_obj.setUrl(self.chain_full_url)
         if self.chain_api_key is not None:
             self.loki_obj.setApiKey(self.chain_api_key)
+
         ####query chain for history list#####
         try:
-            history = np.array(self.loki_obj.printChain()["result"]["history"].split(','))
+            bestBlockId = self.loki_obj.chainInfo()["result"]["bestBlockId"]
             ###Getting topmost block
-            history_instance = self.loki_obj.getBlockById(history[-1])["result"]
+            history_instance = self.loki_obj.getBlockById(bestBlockId)["result"]
             # Querying parentId of 1st block returns 500 error None.get
             # printJson(loki_obj.getBlockById("4vJ9JU1bJJE96FWSJKvHsmmFADCg4gpZQff4P3bkLKi"))
         except Exception as e:
@@ -205,16 +207,17 @@ class Database:
 
     ###Query chain and update database###
     ###Method is wrapped in try block with except pass to ensure that script continues to attempt updates to database even if it fails at some instance, for example, due to closed connection to chain
+
     def query_chain_and_update_database(self):
         try:
             print("======================Entered query_chain_and_update_database=======================")
-            history = np.array(self.loki_obj.printChain()["result"]["history"].split(','))
+            bestBlockId = self.loki_obj.chainInfo()["result"]["bestBlockId"]
             ###database connection intialization####
             self.conn = sqlite3.connect(self.filename)
             self.cur = self.conn.cursor()
-            current_index = -1
             ###Getting topmost block
-            history_instance = self.loki_obj.getBlockById(history[current_index])["result"]
+            history_instance = self.loki_obj.getBlockById(bestBlockId)["result"]
+
             c = self.cur.execute("SELECT * FROM blocks WHERE blockNumber=?", (history_instance["blockNumber"],))
             data = c.fetchone()
             ###Accessing parent of topmost block until a block is queried that already exists in db
@@ -222,9 +225,8 @@ class Database:
                 self.cur.execute("INSERT INTO blocks VALUES (?,?,?,?,?,?,?,?)", (history_instance["blockNumber"], history_instance["id"], history_instance["timestamp"], history_instance["signature"], parse_json.create_transactions_string(history_instance), history_instance["parentId"],  history_instance["blockDifficulty"], json.dumps(history_instance)))
                 self.parse_transactions_array_and_update_tables(history_instance["txs"])
                 self.parse_transaction_and_update_adresses_table(history_instance["txs"])
-                current_index = current_index - 1
                 ###Getting parent of topmost block
-                history_instance = self.loki_obj.getBlockById(history[current_index])["result"]
+                history_instance = self.loki_obj.getBlockById(history_instance["parentId"])["result"]
                 c = self.cur.execute("SELECT * FROM blocks WHERE blockNumber=?", (history_instance["blockNumber"],))
                 data = c.fetchone()
 
