@@ -3,4 +3,4 @@ Flask==1.0.2
 LokiPy==0.11
 flask_limiter==1.0.1
 numpy==1.16.2
-waitress==1.2.1
+waitress==1.4.2
